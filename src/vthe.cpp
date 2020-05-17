@@ -8,6 +8,9 @@ public:
     const seal::KeyGenerator keygen(ctx);
     public_key = keygen.public_key();
     secret_key = keygen.secret_key();
+    seal::BatchEncoder encoder(ctx);
+    const size_t batch_size = encoder.slot_count() / 2;
+    transformed = std::vector<uint64_t>(batch_size, 0);
   }
 
   std::vector<seal::Ciphertext> encrypt(const std::vector<bool> &state) {
@@ -20,13 +23,11 @@ public:
     res.reserve(num_batches);
 
     for (size_t i = 0; i < num_batches; i++) {
-      std::vector<uint64_t> transformed;
-      transformed.reserve(batch_size);
       seal::Ciphertext ct;
       const size_t start = i * batch_size;
       const size_t end = std::min(state.size() - start, batch_size);
       for (size_t j = 0; j < end; j++) {
-        transformed.emplace_back(state[start + j] ? 0 : 1);
+        transformed[j] = state[start + j] ? 0 : 1;
       }
       encrypter_impl(encryptor, encoder, transformed, ct);
       res.emplace_back(std::move(ct));
@@ -45,14 +46,14 @@ public:
       throw "Number of batches does not match likelihood size";
     }
 
+    std::vector<uint64_t> transformed(batch_size, 0);
+
     for (size_t i = 0; i < num_batches; i++) {
-      std::vector<uint64_t> transformed;
-      transformed.reserve(batch_size);
       seal::Ciphertext &ct = cts[i];
       const size_t start = i * batch_size;
       const size_t end = std::min(likelihoods.size() - start, batch_size);
       for (size_t j = 0; j < end; j++) {
-        transformed.emplace_back(likelihoods[start + j] ? 0 : 1);
+        transformed[j] = likelihoods[start + j] ? 0 : 1;
       }
       multiply_impl(evaluator, encoder, ct, transformed);
     }
@@ -69,8 +70,6 @@ public:
     }
 
     for (size_t i = 0; i < num_batches; i++) {
-      std::vector<uint64_t> transformed;
-      transformed.reserve(batch_size);
       seal::Ciphertext &ct = cts[i];
       decrypt_impl(decryptor, encoder, ct, transformed);
       const size_t start = i * batch_size;
@@ -85,6 +84,7 @@ private:
   const std::shared_ptr<seal::SEALContext> ctx;
   seal::PublicKey public_key;
   seal::SecretKey secret_key;
+  std::vector<uint64_t> transformed;
 
   void encrypter_impl(const seal::Encryptor &encryptor, seal::BatchEncoder &encoder, const std::vector<uint64_t> &state,
                       seal::Ciphertext &ct) const {
