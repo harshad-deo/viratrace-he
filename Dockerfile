@@ -49,3 +49,5 @@ RUN git clone https://github.com/google/benchmark.git \
   && cmake -DCMAKE_BUILD_TYPE=Release -DBENCHMARK_ENABLE_LTO=true -DBENCHMARK_ENABLE_GTEST_TESTS=false -DBENCHMARK_ENABLE_TESTING=false .. \
   && make \
   && make install
+
+# WIP, sorry ):(
