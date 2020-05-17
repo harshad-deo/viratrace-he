@@ -13,7 +13,7 @@ public:
     transformed = std::vector<uint64_t>(batch_size, 0);
   }
 
-  std::unique_ptr<std::vector<seal::Ciphertext>> encrypt(const std::vector<bool> &state) {
+  std::vector<seal::Ciphertext> encrypt(const std::vector<bool> &state) {
     const seal::Encryptor encryptor(ctx, public_key);
     seal::BatchEncoder encoder(ctx);
     const size_t batch_size = encoder.slot_count() / 2;
@@ -33,7 +33,7 @@ public:
       res.emplace_back(std::move(ct));
     }
 
-    return std::make_unique<std::vector<seal::Ciphertext>>(res);
+    return res;
   }
 
   void multiply(std::vector<seal::Ciphertext> &cts, const std::vector<bool> &likelihoods) {
@@ -73,8 +73,8 @@ public:
       const size_t start = i * batch_size;
       const size_t end = std::min(state.size(), start + batch_size);
       for (size_t j = 0; j < end; j++) {
-        // state[start + j] = state[start + j] || ((transformed[j] == 0) ? true : false);
-        state[start + j] = (transformed[j] == 0ULL) ? true : false;
+        state[start + j] = state[start + j] || ((transformed[j] == 0LL) ? true : false);
+        // state[start + j] = (transformed[j] == 0ULL) ? true : false;
       }
     }
   }
@@ -107,65 +107,29 @@ private:
   }
 };
 
-Vthe::Vthe(std::unique_ptr<std::vector<bool>> &initial_state, const double infectivity_prob,
-           const seal::EncryptionParameters &params)
-    : infectivity(generate_random_vector(infectivity_prob, initial_state->size())),
+Vthe::Vthe(std::vector<bool> &initial_state, const double infectivity_prob, const seal::EncryptionParameters &params)
+    : state(std::move(initial_state)), infectivity(generate_random_vector(infectivity_prob, state.size())),
       pimpl(std::make_unique<Impl>(Impl(params))) {
-  state = std::move(initial_state);
+  likelihood = std::vector<bool>(state.size(), false);
 }
 
-// std::unique_ptr<std::vector<seal::Ciphertext>> Vthe::encrypt_state() { return pimpl->encrypt(*state); }
+std::vector<seal::Ciphertext> Vthe::encrypt_state() { return pimpl->encrypt(state); }
 
-// void Vthe::multiply(std::vector<seal::Ciphertext> &cts) {
-//   std::vector<bool> likelihoods;
-//   likelihoods.reserve(state->size());
-//   std::transform(state->begin(), state->end(), infectivity->begin(), likelihoods.begin(),
-//                  [](bool x, bool y) { return x || y; });
-//   pimpl->multiply(cts, likelihoods);
-// }
+void Vthe::multiply(std::vector<seal::Ciphertext> &cts) {
+  for (size_t i = 0; i < state.size(); i++) {
+    likelihood[i] = state[i] && infectivity[i];
+  }
+  pimpl->multiply(cts, likelihood);
+}
 
-// void Vthe::decrypt_and_update(std::vector<seal::Ciphertext> &cts) { pimpl->decrypt(cts, *state); }
+void Vthe::decrypt_and_update(std::vector<seal::Ciphertext> &cts) { pimpl->decrypt(cts, state); }
 
-const std::vector<bool> &Vthe::get_state() const { return *state; }
+const std::vector<bool> &Vthe::get_state() const { return state; }
 
-const std::vector<bool> &Vthe::get_infectivity() const { return *infectivity; }
+const std::vector<bool> &Vthe::get_infectivity() const { return infectivity; }
 
 Vthe::~Vthe() = default;
 
 Vthe::Vthe(Vthe &&) = default;
 
 Vthe &Vthe::operator=(Vthe &&) = default;
-
-std::vector<uint64_t> generate_random(const double p_success, const size_t simulation_size) {
-  std::vector<uint64_t> res;
-  res.reserve(simulation_size);
-  const int threshold = std::floor(p_success * RAND_MAX + 0.5);
-  for (size_t i = 0; i < simulation_size; i++) {
-    const int elem = rand() > threshold ? 0 : 1;
-    res.push_back(elem);
-  }
-  return res;
-}
-
-void Vthe::boom() {
-  const double p_success_1 = 0.5;
-  const double p_success_2 = 0.3;
-  const size_t simulation_size = 500;
-
-  const auto vec_1 = *generate_random_vector(p_success_1, simulation_size);
-  const auto vec_2 = *generate_random_vector(p_success_2, simulation_size);
-  std::vector<bool> vec_3(vec_2);
-
-  auto enc = *pimpl->encrypt(vec_1);
-  pimpl->multiply(enc, vec_2);
-  pimpl->decrypt(enc, vec_3);
-
-  for (size_t i = 0; i < simulation_size; i++) {
-    const bool expected = vec_1[i] || vec_2[i];
-    const bool actual = vec_3[i];
-    if (expected != actual) {
-      std::cout << expected << " *** " << actual << " *** " << vec_1[i] << " *** " << vec_2[i] << " *** " << vec_3[i]
-                << std::endl;
-    }
-  }
-}
