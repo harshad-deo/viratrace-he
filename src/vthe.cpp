@@ -13,7 +13,7 @@ public:
     transformed = std::vector<uint64_t>(batch_size, 0);
   }
 
-  std::unique_ptr<std::vector<seal::Ciphertext>> encrypt(const std::vector<uint64_t> &state) {
+  std::unique_ptr<std::vector<seal::Ciphertext>> encrypt(const std::vector<bool> &state) {
     const seal::Encryptor encryptor(ctx, public_key);
     seal::BatchEncoder encoder(ctx);
     const size_t batch_size = encoder.slot_count() / 2;
@@ -27,8 +27,7 @@ public:
       const size_t start = i * batch_size;
       const size_t end = std::min(state.size(), start + batch_size);
       for (size_t j = 0; j < end; j++) {
-        // transformed[j] = state[start + j] ? 0 : 1;
-        transformed[j] = state[start + j];
+        transformed[j] = state[start + j] ? 0 : 1;
       }
       encrypter_impl(encryptor, encoder, transformed, ct);
       res.emplace_back(std::move(ct));
@@ -37,7 +36,7 @@ public:
     return std::make_unique<std::vector<seal::Ciphertext>>(res);
   }
 
-  void multiply(std::vector<seal::Ciphertext> &cts, const std::vector<uint64_t> &likelihoods) {
+  void multiply(std::vector<seal::Ciphertext> &cts, const std::vector<bool> &likelihoods) {
     seal::BatchEncoder encoder(ctx);
     seal::Evaluator evaluator(ctx);
 
@@ -52,14 +51,13 @@ public:
       const size_t start = i * batch_size;
       const size_t end = std::min(likelihoods.size(), start + batch_size);
       for (size_t j = 0; j < end; j++) {
-        // transformed[j] = likelihoods[start + j] ? 0 : 1;
-        transformed[j] = likelihoods[start + j];
+        transformed[j] = likelihoods[start + j] ? 0 : 1;
       }
-      multiply_impl(evaluator, encoder, ct, likelihoods);
+      multiply_impl(evaluator, encoder, ct, transformed);
     }
   }
 
-  void decrypt(std::vector<seal::Ciphertext> &cts, std::vector<uint64_t> &state) {
+  void decrypt(std::vector<seal::Ciphertext> &cts, std::vector<bool> &state) {
     seal::BatchEncoder encoder(ctx);
     seal::Decryptor decryptor(ctx, secret_key);
 
@@ -76,7 +74,7 @@ public:
       const size_t end = std::min(state.size(), start + batch_size);
       for (size_t j = 0; j < end; j++) {
         // state[start + j] = state[start + j] || ((transformed[j] == 0) ? true : false);
-        state[start + j] = transformed[j];
+        state[start + j] = (transformed[j] == 0ULL) ? true : false;
       }
     }
   }
@@ -154,17 +152,17 @@ void Vthe::boom() {
   const double p_success_2 = 0.3;
   const size_t simulation_size = 500;
 
-  const auto vec_1 = generate_random(p_success_1, simulation_size);
-  const auto vec_2 = generate_random(p_success_2, simulation_size);
-  std::vector<uint64_t> vec_3(vec_2);
+  const auto vec_1 = *generate_random_vector(p_success_1, simulation_size);
+  const auto vec_2 = *generate_random_vector(p_success_2, simulation_size);
+  std::vector<bool> vec_3(vec_2);
 
   auto enc = *pimpl->encrypt(vec_1);
   pimpl->multiply(enc, vec_2);
   pimpl->decrypt(enc, vec_3);
 
   for (size_t i = 0; i < simulation_size; i++) {
-    const uint64_t expected = vec_1[i] * vec_2[i];
-    const uint64_t actual = vec_3[i];
+    const bool expected = vec_1[i] || vec_2[i];
+    const bool actual = vec_3[i];
     if (expected != actual) {
       std::cout << expected << " *** " << actual << " *** " << vec_1[i] << " *** " << vec_2[i] << " *** " << vec_3[i]
                 << std::endl;
