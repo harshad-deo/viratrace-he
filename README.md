@@ -93,9 +93,9 @@ i.e. excess risk due to the interaction, is exchanged. The advantages are:
 1. Privacy is increased without sacrificing efficacy. 
 1. The lost privacy is concordant with the magnitude of the externality. 
 
-To understand the implications of the second point, consider the case of a highly contagious risk Alice interacting with a healthy Bob. In this case, Alice poses a much higher risk to Bob than Bob poses to Alice. Alice's posterior state vector will be 
+To understand the implications of the second point, consider the case of a highly contagious Alice interacting with a healthy Bob. In this case, Alice poses a much higher risk to Bob than Bob poses to Alice. Alice's posterior state vector will be 
 nearly the same as her prior (since it was mostly `true`), therefore the information she gains about Bob's infectivity is 
-minimal. On the other hand, Bob's posterior will be significantly different from Alice's (since it was mostly `false`),
+minimal. On the other hand, Bob's posterior will be significantly different from his prior (since it was mostly `false`),
 and he gains a lot of information about Alice's infectivity. Without homomorphic encryption, both would have learnt the 
 same amount of information about the other. 
 
