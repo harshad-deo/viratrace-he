@@ -10,7 +10,8 @@
  */
 class Vthe {
 public:
-  Vthe(std::vector<bool> &initial_state, const double infectivity_prob, const seal::EncryptionParameters &params);
+  Vthe(std::unique_ptr<std::vector<bool>> &initial_state, const double infectivity_prob,
+       const seal::EncryptionParameters &params);
   ~Vthe();
   Vthe(Vthe &&);
   Vthe &operator=(Vthe &&);
@@ -26,8 +27,8 @@ public:
   void decrypt_and_update(std::vector<seal::Ciphertext> &cts);
 
 private:
-  std::vector<bool> state;
-  std::vector<bool> infectivity;
+  std::unique_ptr<std::vector<bool>> state;
+  std::unique_ptr<std::vector<bool>> infectivity;
   std::vector<bool> likelihood;
   class Impl;
   std::unique_ptr<Impl> pimpl;

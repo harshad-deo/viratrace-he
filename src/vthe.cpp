@@ -8,9 +8,6 @@ public:
     const seal::KeyGenerator keygen(ctx);
     public_key = keygen.public_key();
     secret_key = keygen.secret_key();
-    seal::BatchEncoder encoder(ctx);
-    const size_t batch_size = encoder.slot_count() / 2;
-    transformed = std::vector<uint64_t>(batch_size, 0);
   }
 
   std::vector<seal::Ciphertext> encrypt(const std::vector<bool> &state) {
@@ -23,11 +20,13 @@ public:
     res.reserve(num_batches);
 
     for (size_t i = 0; i < num_batches; i++) {
+      std::vector<uint64_t> transformed;
+      transformed.reserve(batch_size);
       seal::Ciphertext ct;
       const size_t start = i * batch_size;
-      const size_t end = std::min(state.size(), start + batch_size);
+      const size_t end = std::min(state.size() - start, batch_size);
       for (size_t j = 0; j < end; j++) {
-        transformed[j] = state[start + j] ? 0 : 1;
+        transformed.emplace_back(state[start + j] ? 0 : 1);
       }
       encrypter_impl(encryptor, encoder, transformed, ct);
       res.emplace_back(std::move(ct));
@@ -47,11 +46,13 @@ public:
     }
 
     for (size_t i = 0; i < num_batches; i++) {
+      std::vector<uint64_t> transformed;
+      transformed.reserve(batch_size);
       seal::Ciphertext &ct = cts[i];
       const size_t start = i * batch_size;
-      const size_t end = std::min(likelihoods.size(), start + batch_size);
+      const size_t end = std::min(likelihoods.size() - start, batch_size);
       for (size_t j = 0; j < end; j++) {
-        transformed[j] = likelihoods[start + j] ? 0 : 1;
+        transformed.emplace_back(likelihoods[start + j] ? 0 : 1);
       }
       multiply_impl(evaluator, encoder, ct, transformed);
     }
@@ -68,13 +69,14 @@ public:
     }
 
     for (size_t i = 0; i < num_batches; i++) {
+      std::vector<uint64_t> transformed;
+      transformed.reserve(batch_size);
       seal::Ciphertext &ct = cts[i];
       decrypt_impl(decryptor, encoder, ct, transformed);
       const size_t start = i * batch_size;
-      const size_t end = std::min(state.size(), start + batch_size);
+      const size_t end = std::min(state.size() - start, batch_size);
       for (size_t j = 0; j < end; j++) {
         state[start + j] = state[start + j] || ((transformed[j] == 0LL) ? true : false);
-        // state[start + j] = (transformed[j] == 0ULL) ? true : false;
       }
     }
   }
@@ -83,7 +85,6 @@ private:
   const std::shared_ptr<seal::SEALContext> ctx;
   seal::PublicKey public_key;
   seal::SecretKey secret_key;
-  std::vector<uint64_t> transformed;
 
   void encrypter_impl(const seal::Encryptor &encryptor, seal::BatchEncoder &encoder, const std::vector<uint64_t> &state,
                       seal::Ciphertext &ct) const {
@@ -107,26 +108,27 @@ private:
   }
 };
 
-Vthe::Vthe(std::vector<bool> &initial_state, const double infectivity_prob, const seal::EncryptionParameters &params)
-    : state(std::move(initial_state)), infectivity(generate_random_vector(infectivity_prob, state.size())),
+Vthe::Vthe(std::unique_ptr<std::vector<bool>> &initial_state, const double infectivity_prob,
+           const seal::EncryptionParameters &params)
+    : state(std::move(initial_state)), infectivity(generate_random_vector(infectivity_prob, state->size())),
       pimpl(std::make_unique<Impl>(Impl(params))) {
-  likelihood = std::vector<bool>(state.size(), false);
+  likelihood = std::vector<bool>(state->size(), false);
 }
 
-std::vector<seal::Ciphertext> Vthe::encrypt_state() { return pimpl->encrypt(state); }
+std::vector<seal::Ciphertext> Vthe::encrypt_state() { return pimpl->encrypt(*state); }
 
 void Vthe::multiply(std::vector<seal::Ciphertext> &cts) {
-  for (size_t i = 0; i < state.size(); i++) {
-    likelihood[i] = state[i] && infectivity[i];
+  for (size_t i = 0; i < state->size(); i++) {
+    likelihood[i] = (*state)[i] && (*infectivity)[i];
   }
   pimpl->multiply(cts, likelihood);
 }
 
-void Vthe::decrypt_and_update(std::vector<seal::Ciphertext> &cts) { pimpl->decrypt(cts, state); }
+void Vthe::decrypt_and_update(std::vector<seal::Ciphertext> &cts) { pimpl->decrypt(cts, *state); }
 
-const std::vector<bool> &Vthe::get_state() const { return state; }
+const std::vector<bool> &Vthe::get_state() const { return *state; }
 
-const std::vector<bool> &Vthe::get_infectivity() const { return infectivity; }
+const std::vector<bool> &Vthe::get_infectivity() const { return *infectivity; }
 
 Vthe::~Vthe() = default;
 

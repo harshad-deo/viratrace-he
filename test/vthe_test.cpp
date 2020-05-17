@@ -4,7 +4,7 @@
 #include "gtest/gtest.h"
 #include <iostream>
 
-TEST(VT_HE, LESS_THAN_BATCH_SIZE) {
+void run_test(const size_t simulation_size) {
   const size_t poly_modulus_degree = 8192;
   seal::EncryptionParameters params(seal::scheme_type::BFV);
 
@@ -12,15 +12,13 @@ TEST(VT_HE, LESS_THAN_BATCH_SIZE) {
   params.set_coeff_modulus(seal::CoeffModulus::BFVDefault(poly_modulus_degree));
   params.set_plain_modulus(seal::PlainModulus::Batching(poly_modulus_degree, 20));
 
-  const size_t simulation_size = 1024;
-
   const double prior_p_alice = 0.5;
   auto prior_alice = generate_random_vector(prior_p_alice, simulation_size);
-  const std::vector<bool> prior_alice_copy(prior_alice);
+  const std::vector<bool> prior_alice_copy(*prior_alice);
 
   const double prior_p_bob = 0.3;
   auto prior_bob = generate_random_vector(prior_p_bob, simulation_size);
-  const std::vector<bool> prior_bob_copy(prior_bob);
+  const std::vector<bool> prior_bob_copy(*prior_bob);
 
   const double infectivity_alice = 0.4;
   const double infectivity_bob = 0.5;
@@ -45,6 +43,10 @@ TEST(VT_HE, LESS_THAN_BATCH_SIZE) {
     ASSERT_EQ(expected_bob, actual_bob);
   }
 }
+
+TEST(VT_HE, LESS_THAN_BATCH_SIZE) { run_test(1024); }
+
+TEST(VT_HE, MORE_THAN_BATCH_SIZE) { run_test(1024 * 1024); }
 
 int main(int argc, char **argv) {
   std::cout << "Testing chaloo ki jaye..." << std::endl;
