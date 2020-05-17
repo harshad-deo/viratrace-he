@@ -4,3 +4,4 @@ build
 .gitignore
 README.md
 LICENSE
+format.sh
