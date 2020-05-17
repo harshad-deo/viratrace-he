@@ -25,7 +25,7 @@ static void BM_encoding_8192(benchmark::State &state) {
 
     Vthe alice(prior, infectivity, params);
 
-    std::vector<seal::Ciphertext> cts;
+    std::unique_ptr<std::vector<seal::Ciphertext>> cts;
     state.ResumeTiming();
 
     benchmark::DoNotOptimize(cts = alice.encrypt_state());

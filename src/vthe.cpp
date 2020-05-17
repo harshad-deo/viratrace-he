@@ -13,7 +13,7 @@ public:
     transformed = std::vector<uint64_t>(batch_size, 0);
   }
 
-  std::vector<seal::Ciphertext> encrypt(const std::vector<bool> &state) {
+  std::unique_ptr<std::vector<seal::Ciphertext>> encrypt(const std::vector<bool> &state) {
     const seal::Encryptor encryptor(ctx, public_key);
     seal::BatchEncoder encoder(ctx);
     const size_t batch_size = encoder.slot_count() / 2;
@@ -33,30 +33,30 @@ public:
       res.emplace_back(std::move(ct));
     }
 
-    return res;
+    return std::make_unique<std::vector<seal::Ciphertext>>(res);
   }
 
   void multiply(std::vector<seal::Ciphertext> &cts, const std::vector<bool> &likelihoods) {
-    seal::BatchEncoder encoder(ctx);
-    seal::Evaluator evaluator(ctx);
+    // seal::BatchEncoder encoder(ctx);
+    // seal::Evaluator evaluator(ctx);
 
-    const size_t batch_size = encoder.slot_count() / 2;
-    const size_t num_batches = (likelihoods.size() + batch_size - 1) / batch_size;
-    if (num_batches != cts.size()) {
-      throw "Number of batches does not match likelihood size";
-    }
+    // const size_t batch_size = encoder.slot_count() / 2;
+    // const size_t num_batches = (likelihoods.size() + batch_size - 1) / batch_size;
+    // if (num_batches != cts.size()) {
+    //   throw "Number of batches does not match likelihood size";
+    // }
 
-    std::vector<uint64_t> transformed(batch_size, 0);
+    // std::vector<uint64_t> transformed(batch_size, 0);
 
-    for (size_t i = 0; i < num_batches; i++) {
-      seal::Ciphertext &ct = cts[i];
-      const size_t start = i * batch_size;
-      const size_t end = std::min(likelihoods.size() - start, batch_size);
-      for (size_t j = 0; j < end; j++) {
-        transformed[j] = likelihoods[start + j] ? 0 : 1;
-      }
-      multiply_impl(evaluator, encoder, ct, transformed);
-    }
+    // for (size_t i = 0; i < num_batches; i++) {
+    //   seal::Ciphertext &ct = cts[i];
+    //   const size_t start = i * batch_size;
+    //   const size_t end = std::min(likelihoods.size() - start, batch_size);
+    //   for (size_t j = 0; j < end; j++) {
+    //     transformed[j] = likelihoods[start + j] ? 0 : 1;
+    //   }
+    //   multiply_impl(evaluator, encoder, ct, transformed);
+    // }
   }
 
   void decrypt(std::vector<seal::Ciphertext> &cts, std::vector<bool> &state) {
@@ -115,7 +115,7 @@ Vthe::Vthe(std::unique_ptr<std::vector<bool>> &initial_state, const double infec
   likelihood = std::vector<bool>(state->size(), false);
 }
 
-std::vector<seal::Ciphertext> Vthe::encrypt_state() { return pimpl->encrypt(*state); }
+std::unique_ptr<std::vector<seal::Ciphertext>> Vthe::encrypt_state() { return pimpl->encrypt(*state); }
 
 void Vthe::multiply(std::vector<seal::Ciphertext> &cts) {
   for (size_t i = 0; i < state->size(); i++) {

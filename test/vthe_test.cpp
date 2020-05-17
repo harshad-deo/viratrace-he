@@ -28,10 +28,10 @@ void run_test(const size_t simulation_size) {
 
   auto alice_enc = alice.encrypt_state();
   auto bob_enc = bob.encrypt_state();
-  alice.multiply(bob_enc);
-  bob.multiply(alice_enc);
-  alice.decrypt_and_update(alice_enc);
-  bob.decrypt_and_update(bob_enc);
+  alice.multiply(*bob_enc);
+  bob.multiply(*alice_enc);
+  alice.decrypt_and_update(*alice_enc);
+  bob.decrypt_and_update(*bob_enc);
 
   for (size_t i = 0; i < simulation_size; i++) {
     const bool expected_alice = prior_alice_copy[i] || (prior_bob_copy[i] && bob.get_infectivity()[i]);

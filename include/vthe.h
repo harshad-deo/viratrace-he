@@ -19,7 +19,7 @@ public:
   const std::vector<bool> &get_state() const;
   const std::vector<bool> &get_infectivity() const;
 
-  std::vector<seal::Ciphertext> encrypt_state();
+  std::unique_ptr<std::vector<seal::Ciphertext>> encrypt_state();
 
   // the cipher texts are modified
   void multiply(std::vector<seal::Ciphertext> &cts);
