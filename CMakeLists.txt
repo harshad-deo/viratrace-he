@@ -17,6 +17,7 @@ include_directories(include)
 
 add_library(impl
   src/vthe.cpp
+  src/utils.cpp
 )
 
 target_include_directories(impl PUBLIC
