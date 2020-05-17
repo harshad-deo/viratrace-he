@@ -26,7 +26,8 @@ TEST(VT_HE, LESS_THAN_BATCH_SIZE) {
   const double infectivity_bob = 0.5;
 
   Vthe alice(prior_alice, infectivity_alice, params);
-  Vthe bob(prior_bob, infectivity_bob, params);
+  alice.boom();
+  // Vthe bob(prior_bob, infectivity_bob, params);
 }
 
 int main(int argc, char **argv) {

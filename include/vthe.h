@@ -26,6 +26,8 @@ public:
 
   void decrypt_and_update(std::vector<seal::Ciphertext> &cts);
 
+  void boom();
+
 private:
   std::unique_ptr<std::vector<bool>> state;
   std::unique_ptr<std::vector<bool>> infectivity;
