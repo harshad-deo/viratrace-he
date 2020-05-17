@@ -15,7 +15,7 @@ This approach enhances the privacy of the nodes in the network.
 
 ## Setup
 
-Adapt the steps from the Dockerfile for your platform, or build the container and use the shell of a running instance (**recommended**).
+Adapt the steps from the Dockerfile for your platform, or build the container and use the shell of a running instance.
 
 ## ViraTrace Summary
 
