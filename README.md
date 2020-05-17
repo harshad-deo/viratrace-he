@@ -23,7 +23,6 @@ ViraTrace is a simulation based approach for ranking risk (i.e. probability of b
 paper, it is demonstrated that this approach elegantly accounts for the degree of contact and network topology, 
 while being free of the paradoxes of some of the alternative approaches. 
 
-
 ### State
 
 1. A node's state is modelled as a vector of booleans. 
@@ -37,12 +36,12 @@ the disease has a risk score of zero.
 1. The infectivity (i.e. probability of transmission) of a node is modelled as a vector of booleans. The values may be 
 interpreted as iid draws from a latent Bernoulli variable. 
 1. The function that gived success probability of the latent bernoulli variable sampled to get the infectivity vector is 
-isomorphic to the one that gives the _true_ infectivity, but is scaled to give a usable distribution of risk scores for
+isomorphic to the one that gives the _true_ infectivity, but is transformed to give a usable distribution of risk scores for
 a _reasonable_ simulation size.
 
 ### Transmission
 
-1. A node's likelihood of transmitting the disease is the logical conjunction of a node's state and its infectivity.
+1. A node's transmission likelihood is the logical conjunction of a its state and its infectivity.
 1. A node's posterior risk score is the logical disjunction of its state and the transmission likelihood of the other node.
 
 ### Example
@@ -64,6 +63,18 @@ bob_posterior     = [1, 1, 1, 1, 0, 0, 0, 0, 0, 1]
 ```
 
 ## Homomorphic Encryption
+
+The private data held by each node is its state vector and the tranmission likelihood for the interaction. Considering 
+Alice and Bob, there are two ways to propogate risk through the network:
+
+1. Alice shares her state with Bob, who computes the disjunction with his transmission likelihood and returns the posterior risk score.
+1. Bob shares his transmission likelihood with Alice, who then updates her state.
+
+This project takes the first approach. Concretely,
+
+1. Alice homomorphically encrypts her state and sends the cipher text to Bob.
+1. Bob computes the logical disjunction on the encrypted ciphertext and returns the transformed ciphertext.
+1. Alice decrypts the cipher text and sets her state to the posterior risk score. 
 
 ## Advantages
 
