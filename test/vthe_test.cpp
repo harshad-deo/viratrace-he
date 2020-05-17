@@ -1,49 +1,32 @@
+#include "seal/seal.h"
+#include "utils.h"
+#include "vthe.h"
 #include "gtest/gtest.h"
 #include <iostream>
-#include <stdlib.h>
 
-// const int input_size = 4096 * 4096 + 1;
-// const double _eps = 5e-14;
+TEST(VT_HE, LESS_THAN_BATCH_SIZE) {
+  const size_t poly_modulus_degree = 8192;
+  seal::EncryptionParameters params(seal::scheme_type::BFV);
 
-// double cnorm(const double arg) {
-//   return 0.5 * erfc(-arg * M_SQRT1_2);
-// }
+  params.set_poly_modulus_degree(poly_modulus_degree);
+  params.set_coeff_modulus(seal::CoeffModulus::BFVDefault(poly_modulus_degree));
+  params.set_plain_modulus(seal::PlainModulus::Batching(poly_modulus_degree, 20));
 
-TEST(VT_HE, EQUIV) {
-  // auto input = std::vector<BlackVectorInput>();
-  // BlackVector blackVector(input_size);
-  // srand (time(NULL));
-  // for(unsigned int i = 0; i < input_size; i++){
-  //   const double spot = 64 + (rand() % 2048 - 1024) / 4096.0;
-  //   const double strike = 64 + (rand() % 2048 - 1024) / 256.0;
-  //   const double rd = 0.1 + (rand() % 2048 - 1024) / 40960.0;
-  //   const double rf = 0.01 + (rand() % 2048 - 1024) / 81960.0;
-  //   const double tau = 1 + (rand() % 2048 - 1024) / 4096.0;
-  //   const double sigma = 0.1 + (rand() % 2048 - 1024) / 40960.0;
-  //   BlackVectorInput inp(spot, strike, rd, rf, tau, sigma);
-  //   input.push_back(inp);
-  //   blackVector.add(i, inp);
-  // }
-  // blackVector.compute();
-  // for(int i = 0; i < input_size; i++){
-  //   auto arg = input[i];
-  //   auto res = blackVector.result(i);
-  //   const double spot = arg.getSpot();
-  //   const double strike = arg.getStrike();
-  //   const double rd = arg.getRd();
-  //   const double rf = arg.getRf();
-  //   const double tau = arg.getTau();
-  //   const double sigma = arg.getSigma();
-  //   const double d1 = (log(spot / strike) + (rd - rf + sigma * sigma / 2) * tau) / (sigma * sqrt(tau));
-  //   const double d2 = (log(spot / strike) + (rd - rf - sigma * sigma / 2) * tau) / (sigma * sqrt(tau));
-  //   const double delta = cnorm(d1) * exp(-rf * tau);
-  //   const double value = delta * spot - strike * cnorm(d2) * exp(-rd * tau);
-  //   const double errorValue = std::abs(res.getValue() - value);
-  //   const double errorDelta = std::abs(res.getDelta() - delta);
-  //   // printf("%d: calcValue: %g, calcDelta: %g\n", i, res.getValue(), res.getDelta());
-  //   // printf("%d: errorValue: %g, errorDelta: %g, calcValue: %g, calcDelta: %g\n", i, errorValue, errorDelta,
-  //   res.getValue(), res.getDelta()); ASSERT_LE(errorValue, _eps); ASSERT_LE(errorDelta, _eps);
-  // }
+  const size_t simulation_size = 512;
+
+  const double prior_p_alice = 0.5;
+  std::unique_ptr<std::vector<bool>> prior_alice = generate_random_vector(prior_p_alice, simulation_size);
+  const std::vector<bool> prior_alice_copy(*prior_alice);
+
+  const double prior_p_bob = 0.3;
+  std::unique_ptr<std::vector<bool>> prior_bob = generate_random_vector(prior_p_bob, simulation_size);
+  const std::vector<bool> prior_bob_copy(*prior_bob);
+
+  const double infectivity_alice = 0.4;
+  const double infectivity_bob = 0.5;
+
+  Vthe alice(prior_alice, infectivity_alice, params);
+  Vthe bob(prior_bob, infectivity_bob, params);
 }
 
 int main(int argc, char **argv) {

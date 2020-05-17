@@ -107,9 +107,9 @@ private:
   }
 };
 
-Vthe::Vthe(std::unique_ptr<std::vector<bool>> initial_state, const double infectivity_prob,
+Vthe::Vthe(std::unique_ptr<std::vector<bool>> &initial_state, const double infectivity_prob,
            const seal::EncryptionParameters &params)
-    : infectivity(generate_random_vector(infectivity_prob, state->size())),
+    : infectivity(generate_random_vector(infectivity_prob, initial_state->size())),
       pimpl(std::make_unique<Impl>(Impl(params))) {
   state = std::move(initial_state);
 }
@@ -129,3 +129,9 @@ void Vthe::decrypt_and_update(std::vector<seal::Ciphertext> &cts) { pimpl->decry
 const std::vector<bool> &Vthe::get_state() const { return *state; }
 
 const std::vector<bool> &Vthe::get_infectivity() const { return *infectivity; }
+
+Vthe::~Vthe() = default;
+
+Vthe::Vthe(Vthe &&) = default;
+
+Vthe &Vthe::operator=(Vthe &&) = default;
