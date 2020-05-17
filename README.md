@@ -74,7 +74,7 @@ This project takes the first approach. Concretely,
 
 1. Alice homomorphically encrypts her state and sends the cipher text to Bob.
 1. Bob computes the logical disjunction on the encrypted ciphertext and returns the transformed ciphertext.
-1. Alice decrypts the cipher text and sets her state to the posterior risk score. 
+1. Alice decrypts the cipher text and sets her state to the disjunction of her state with the decrypted ciphertext.
 
 #### Implementation
 
@@ -82,7 +82,8 @@ This project takes the first approach. Concretely,
 logical disjunction is equivalent to multiplication. 
 1. The state vector (of Alice) is encrypted using the BFV scheme, and multiplied (by Bob) with a plain text encoding 
 of the transmission likelihood. 
-1. Alice decrypts the ciphertext and inverse maps the integers to booleans. This is her posterior risk score. 
+1. Alice decrypts the ciphertext and inverse maps the integers to booleans. Her state is set to its disjunction with the 
+decrypted vector.  
 
 ## Advantages
 

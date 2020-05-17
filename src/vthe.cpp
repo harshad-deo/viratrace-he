@@ -74,7 +74,7 @@ public:
       const size_t start = i * batch_size;
       const size_t end = std::min(state.size(), start + batch_size);
       for (size_t j = 0; j < end; j++) {
-        state[start + j] = (transformed[j] == 0) ? true : false;
+        state[start + j] = state[start + j] || ((transformed[j] == 0) ? true : false);
       }
     }
   }
@@ -113,6 +113,18 @@ Vthe::Vthe(std::unique_ptr<std::vector<bool>> initial_state, const double infect
       pimpl(std::make_unique<Impl>(Impl(params))) {
   state = std::move(initial_state);
 }
+
+std::unique_ptr<std::vector<seal::Ciphertext>> Vthe::encrypt_state() { return pimpl->encrypt(*state); }
+
+void Vthe::multiply(std::vector<seal::Ciphertext> &cts) {
+  std::vector<bool> likelihoods;
+  likelihoods.reserve(state->size());
+  std::transform(state->begin(), state->end(), infectivity->begin(), likelihoods.begin(),
+                 [](bool x, bool y) { return x || y; });
+  pimpl->multiply(cts, likelihoods);
+}
+
+void Vthe::decrypt_and_update(std::vector<seal::Ciphertext> &cts) { pimpl->decrypt(cts, *state); }
 
 const std::vector<bool> &Vthe::get_state() const { return *state; }
 
