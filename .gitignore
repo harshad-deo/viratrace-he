@@ -30,3 +30,7 @@
 *.exe
 *.out
 *.app
+
+# Project, environment specific
+build
+.vscode
