@@ -6,7 +6,7 @@
 #define VTHE
 
 /**
- * Infectivity is assumed to be a constant
+ * Infectivity is assumed to be sampled from a constant binomial
  */
 class Vthe {
 public:
@@ -18,7 +18,7 @@ public:
 
 private:
   std::unique_ptr<std::vector<bool>> state;
-  const std::unique_ptr<std::vector<bool>> infectivity;
+  std::unique_ptr<std::vector<bool>> infectivity;
   class Impl;
   const std::unique_ptr<Impl> pimpl;
 };

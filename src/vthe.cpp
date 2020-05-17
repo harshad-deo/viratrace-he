@@ -44,7 +44,7 @@ public:
     const size_t batch_size = encoder.slot_count() / 2;
     const size_t num_batches = (likelihoods.size() + batch_size - 1) / batch_size;
     if (num_batches != cts.size()) {
-      throw "Number of batches does not match CTS size";
+      throw "Number of batches does not match likelihood size";
     }
 
     for (size_t i = 0; i < num_batches; i++) {
@@ -55,6 +55,27 @@ public:
         transformed[j] = likelihoods[start + j] ? 0 : 1;
       }
       multiply_impl(evaluator, encoder, ct, transformed);
+    }
+  }
+
+  void decrypt(std::vector<seal::Ciphertext> &cts, std::vector<bool> &state) {
+    seal::BatchEncoder encoder(ctx);
+    seal::Decryptor decryptor(ctx, secret_key);
+
+    const size_t batch_size = encoder.slot_count() / 2;
+    const size_t num_batches = (state.size() + batch_size - 1) / batch_size;
+    if (num_batches != cts.size()) {
+      throw "Number of batches does not match state size";
+    }
+
+    for (size_t i = 0; i < num_batches; i++) {
+      seal::Ciphertext ct = cts[i];
+      decrypt_impl(decryptor, encoder, ct, transformed);
+      const size_t start = i * batch_size;
+      const size_t end = std::min(state.size(), start + batch_size);
+      for (size_t j = 0; j < end; j++) {
+        state[start + j] = (transformed[j] == 0) ? true : false;
+      }
     }
   }
 
@@ -72,10 +93,17 @@ private:
   }
 
   void multiply_impl(seal::Evaluator &evaluator, seal::BatchEncoder &encoder, seal::Ciphertext &ct,
-                     gsl::span<const uint64_t> state) const {
+                     gsl::span<const uint64_t> likelihood) const {
     seal::Plaintext pt;
-    encoder.encode(state, pt);
+    encoder.encode(likelihood, pt);
     evaluator.multiply_plain_inplace(ct, pt);
+  }
+
+  void decrypt_impl(seal::Decryptor &decryptor, seal::BatchEncoder &encoder, seal::Ciphertext &ct,
+                    gsl::span<uint64_t> transformed) const {
+    seal::Plaintext pt;
+    decryptor.decrypt(ct, pt);
+    encoder.decode(pt, transformed);
   }
 };
 
