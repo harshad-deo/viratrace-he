@@ -8,14 +8,14 @@ static const size_t RANGE_MIN = 1;
 static const size_t RANGE_MAX = 1 << 4;
 static const size_t RANGE_MULT = 2;
 
-class EncodingFixture : public benchmark::Fixture {
+class EncodeFixture : public benchmark::Fixture {
 public:
   void SetUp(const ::benchmark::State &state) {
     if (state.thread_index == 0) {
       vthes = std::vector<std::unique_ptr<Vthe>>();
       size_t range = RANGE_MIN;
       while (range <= RANGE_MAX) {
-        vthe_enc_builder(range);
+        vthe_encode_builder(range);
         range *= RANGE_MULT;
       }
     }
@@ -24,7 +24,7 @@ public:
   std::vector<std::unique_ptr<Vthe>> vthes;
 
 private:
-  void vthe_enc_builder(const size_t sz) {
+  void vthe_encode_builder(const size_t sz) {
     const size_t poly_modulus_degree = 8192;
     seal::EncryptionParameters params(seal::scheme_type::BFV);
 
@@ -46,7 +46,7 @@ private:
   }
 };
 
-BENCHMARK_DEFINE_F(EncodingFixture, BM_encoding_8192)(benchmark::State &state) {
+BENCHMARK_DEFINE_F(EncodeFixture, BM_encode_8192)(benchmark::State &state) {
   for (auto _ : state) {
     std::unique_ptr<std::vector<seal::Ciphertext>> cts;
     const int idx = log2Int(state.range(0) / RANGE_MIN) / log2Int(RANGE_MULT);
@@ -56,7 +56,7 @@ BENCHMARK_DEFINE_F(EncodingFixture, BM_encoding_8192)(benchmark::State &state) {
   }
 }
 
-BENCHMARK_REGISTER_F(EncodingFixture, BM_encoding_8192)
+BENCHMARK_REGISTER_F(EncodeFixture, BM_encode_8192)
     ->RangeMultiplier(RANGE_MULT)
     ->Range(RANGE_MIN, RANGE_MAX)
     ->MinTime(3)
