@@ -30,7 +30,6 @@ public:
 private:
   std::unique_ptr<std::vector<bool>> state;
   std::unique_ptr<std::vector<bool>> infectivity;
-  std::vector<bool> likelihood;
   class Impl;
   std::unique_ptr<Impl> pimpl;
 };

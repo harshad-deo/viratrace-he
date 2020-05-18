@@ -36,12 +36,13 @@ public:
     return std::make_unique<std::vector<seal::Ciphertext>>(res);
   }
 
-  void multiply_inplace(std::vector<seal::Ciphertext> &cts, const std::vector<bool> &likelihoods) {
+  void multiply(const std::vector<seal::Ciphertext> &cts, const std::vector<bool> &state,
+                const std::vector<bool> &infectivity, std::vector<seal::Ciphertext> &res) {
     seal::BatchEncoder encoder(ctx);
     seal::Evaluator evaluator(ctx);
 
     const size_t batch_size = encoder.slot_count() / 2;
-    const size_t num_batches = (likelihoods.size() + batch_size - 1) / batch_size;
+    const size_t num_batches = (state.size() + batch_size - 1) / batch_size;
     if (num_batches != cts.size()) {
       throw "Number of batches does not match likelihood size";
     }
@@ -49,13 +50,15 @@ public:
     std::vector<uint64_t> transformed(batch_size, 0);
 
     for (size_t i = 0; i < num_batches; i++) {
-      seal::Ciphertext &ct = cts[i];
+      const seal::Ciphertext &ct = cts[i];
+      seal::Ciphertext ct_op;
       const size_t start = i * batch_size;
-      const size_t end = std::min(likelihoods.size() - start, batch_size);
+      const size_t end = std::min(state.size() - start, batch_size);
       for (size_t j = 0; j < end; j++) {
-        transformed[j] = likelihoods[start + j] ? 0 : 1;
+        transformed[j] = (state[start + j] && infectivity[start + j]) ? 0 : 1;
       }
-      multiply_impl(evaluator, encoder, ct, transformed);
+      multiply_impl(evaluator, encoder, ct, ct_op, transformed);
+      res[i] = std::move(ct_op);
     }
   }
 
@@ -93,11 +96,11 @@ private:
     encryptor.encrypt(pt, ct);
   }
 
-  void multiply_impl(seal::Evaluator &evaluator, seal::BatchEncoder &encoder, seal::Ciphertext &ct,
-                     const std::vector<uint64_t> &likelihood) const {
+  void multiply_impl(seal::Evaluator &evaluator, seal::BatchEncoder &encoder, const seal::Ciphertext &ct,
+                     seal::Ciphertext &ct_op, const std::vector<uint64_t> &likelihood) const {
     seal::Plaintext pt;
     encoder.encode(likelihood, pt);
-    evaluator.multiply_plain_inplace(ct, pt);
+    evaluator.multiply_plain(ct, pt, ct_op);
   }
 
   void decrypt_impl(seal::Decryptor &decryptor, seal::BatchEncoder &encoder, seal::Ciphertext &ct,
@@ -111,18 +114,17 @@ private:
 Vthe::Vthe(std::unique_ptr<std::vector<bool>> &initial_state, const double infectivity_prob,
            const seal::EncryptionParameters &params)
     : state(std::move(initial_state)), infectivity(generate_random_vector(infectivity_prob, state->size())),
-      pimpl(std::make_unique<Impl>(Impl(params))) {
-  likelihood = std::vector<bool>(state->size(), false);
-}
+      pimpl(std::make_unique<Impl>(Impl(params))) {}
 
 std::unique_ptr<std::vector<seal::Ciphertext>> Vthe::encrypt_state() { return pimpl->encrypt(*state); }
 
-void Vthe::multiply_inplace(std::vector<seal::Ciphertext> &cts) {
-  for (size_t i = 0; i < state->size(); i++) {
-    likelihood[i] = (*state)[i] && (*infectivity)[i];
-  }
-  pimpl->multiply_inplace(cts, likelihood);
+std::unique_ptr<std::vector<seal::Ciphertext>> Vthe::multiply(const std::vector<seal::Ciphertext> &cts) {
+  std::vector<seal::Ciphertext> res(cts.size());
+  pimpl->multiply(cts, *state, *infectivity, res);
+  return std::make_unique<std::vector<seal::Ciphertext>>(res);
 }
+
+void Vthe::multiply_inplace(std::vector<seal::Ciphertext> &cts) { pimpl->multiply(cts, *state, *infectivity, cts); }
 
 void Vthe::decrypt_and_update(std::vector<seal::Ciphertext> &cts) { pimpl->decrypt(cts, *state); }
 

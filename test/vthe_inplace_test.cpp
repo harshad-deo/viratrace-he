@@ -4,7 +4,7 @@
 #include "gtest/gtest.h"
 #include <iostream>
 
-void run_test(const size_t simulation_size) {
+void run_inplace_test(const size_t simulation_size) {
   const size_t poly_modulus_degree = 8192;
   seal::EncryptionParameters params(seal::scheme_type::BFV);
 
@@ -28,10 +28,10 @@ void run_test(const size_t simulation_size) {
 
   auto alice_enc = alice.encrypt_state();
   auto bob_enc = bob.encrypt_state();
-  auto alice_reply = alice.multiply(*bob_enc);
-  auto bob_reply = bob.multiply(*alice_enc);
-  alice.decrypt_and_update(*bob_reply);
-  bob.decrypt_and_update(*alice_reply);
+  alice.multiply_inplace(*bob_enc);
+  bob.multiply_inplace(*alice_enc);
+  alice.decrypt_and_update(*alice_enc);
+  bob.decrypt_and_update(*bob_enc);
 
   for (size_t i = 0; i < simulation_size; i++) {
     const bool expected_alice = prior_alice_copy[i] || (prior_bob_copy[i] && bob.get_infectivity()[i]);
@@ -44,6 +44,6 @@ void run_test(const size_t simulation_size) {
   }
 }
 
-TEST(VT_HE, LESS_THAN_BATCH_SIZE) { run_test(1024); }
+TEST(VT_HE_INPLACE, LESS_THAN_BATCH_SIZE) { run_inplace_test(1024); }
 
-TEST(VT_HE, MORE_THAN_BATCH_SIZE) { run_test(1024 * 1024); }
+TEST(VT_HE_INPLACE, MORE_THAN_BATCH_SIZE) { run_inplace_test(1024 * 1024); }

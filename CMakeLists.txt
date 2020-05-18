@@ -28,7 +28,11 @@ target_include_directories(impl PUBLIC
 
 # testing
 enable_testing()
-add_executable(alltest test/vthe_test.cpp)
+add_executable(alltest
+  test/all_test.cpp
+  test/vthe_test.cpp
+  test/vthe_inplace_test.cpp
+  )
 target_link_libraries(alltest impl gtest pthread)
 gtest_add_tests(TARGET alltest
 				TEST_SUFFIX .noArgs
