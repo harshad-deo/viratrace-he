@@ -59,6 +59,7 @@ BENCHMARK_DEFINE_F(EncodingFixture, BM_encoding_8192)(benchmark::State &state) {
 BENCHMARK_REGISTER_F(EncodingFixture, BM_encoding_8192)
     ->RangeMultiplier(RANGE_MULT)
     ->Range(RANGE_MIN, RANGE_MAX)
-    ->Unit(benchmark::kMicrosecond);
+    ->MinTime(3)
+    ->Unit(benchmark::kMillisecond);
 
 BENCHMARK_MAIN();

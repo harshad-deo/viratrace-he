@@ -28,8 +28,8 @@ void run_test(const size_t simulation_size) {
 
   auto alice_enc = alice.encrypt_state();
   auto bob_enc = bob.encrypt_state();
-  alice.multiply(*bob_enc);
-  bob.multiply(*alice_enc);
+  alice.multiply_inplace(*bob_enc);
+  bob.multiply_inplace(*alice_enc);
   alice.decrypt_and_update(*alice_enc);
   bob.decrypt_and_update(*bob_enc);
 

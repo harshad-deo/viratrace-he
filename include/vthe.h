@@ -21,8 +21,9 @@ public:
 
   std::unique_ptr<std::vector<seal::Ciphertext>> encrypt_state();
 
+  std::unique_ptr<std::vector<seal::Ciphertext>> multiply(const std::vector<seal::Ciphertext> &cts);
   // the cipher texts are modified
-  void multiply(std::vector<seal::Ciphertext> &cts);
+  void multiply_inplace(std::vector<seal::Ciphertext> &cts);
 
   void decrypt_and_update(std::vector<seal::Ciphertext> &cts);
 
