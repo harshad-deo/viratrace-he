@@ -55,7 +55,7 @@ private:
 
     auto enc = alice.encrypt_state();
     cts.emplace_back(std::move(enc));
-    vthes.emplace_back(std::move(std::make_unique<Vthe>(std::move(bob))));
+    vthes.emplace_back(std::make_unique<Vthe>(std::move(bob)));
   }
 };
 
