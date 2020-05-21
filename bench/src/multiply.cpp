@@ -59,17 +59,18 @@ private:
   }
 };
 
-BENCHMARK_DEFINE_F(MultiplyFixture, BM_multiply_inplace_8192)(benchmark::State &state) {
+BENCHMARK_DEFINE_F(MultiplyFixture, BM_multiply_8192)(benchmark::State &state) {
   for (auto _ : state) {
+    std::unique_ptr<std::vector<seal::Ciphertext>> cts_op;
     const int idx = log2Int(state.range(0) / RANGE_MIN) / log2Int(RANGE_MULT);
-    auto &ct = cts[idx];
-    auto &vthe = vthes[idx];
-    (*vthe).multiply_inplace(*ct);
+    const auto &ct = cts[idx];
+    const auto &vthe = vthes[idx];
+    benchmark::DoNotOptimize(cts_op = std::move((*vthe).multiply(*ct)));
     benchmark::ClobberMemory();
   }
 }
 
-BENCHMARK_REGISTER_F(MultiplyFixture, BM_multiply_inplace_8192)
+BENCHMARK_REGISTER_F(MultiplyFixture, BM_multiply_8192)
     ->RangeMultiplier(RANGE_MULT)
     ->Range(RANGE_MIN, RANGE_MAX)
     ->MinTime(3)

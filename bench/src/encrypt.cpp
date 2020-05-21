@@ -50,7 +50,7 @@ BENCHMARK_DEFINE_F(EncryptFixture, BM_encrypt_8192)(benchmark::State &state) {
   for (auto _ : state) {
     std::unique_ptr<std::vector<seal::Ciphertext>> cts;
     const int idx = log2Int(state.range(0) / RANGE_MIN) / log2Int(RANGE_MULT);
-    auto &vthe = vthes[idx];
+    const auto &vthe = vthes[idx];
     benchmark::DoNotOptimize(cts = std::move((*vthe).encrypt_state()));
     benchmark::ClobberMemory();
   }

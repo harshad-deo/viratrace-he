@@ -35,7 +35,7 @@ the disease has a risk score of zero.
 
 1. The infectivity (i.e. probability of transmission) of a node is modelled as a vector of booleans. The values may be 
 interpreted as iid draws from a latent Bernoulli variable. 
-1. The function that gived success probability of the latent bernoulli variable sampled to get the infectivity vector is 
+1. The function that gives success probability of the latent bernoulli variable sampled to get the infectivity vector is 
 isomorphic to the one that gives the _true_ infectivity, but is transformed to give a usable distribution of risk scores for
 a _reasonable_ simulation size.
 
